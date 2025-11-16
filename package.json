@@ -1,0 +1,113 @@
+{
+  "name": "code-energy-profiler",
+  "displayName": "Code Energy Profiler",
+  "description": "Highlights energy hotspots and suggests optimizations for Python/JS code.",
+  "version": "0.1.0",
+  "publisher": "your-publisher-id",
+  "engines": {
+    "vscode": "^1.1.35"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:python",
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onCommand:codeEnergyProfiler.analyzeCurrentFile",
+    "onCommand:codeEnergyProfiler.showSummary",
+    "onCommand:codeEnergyProfiler.toggleLocalOnly"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "codeEnergyProfiler.analyzeCurrentFile",
+        "title": "Code Energy Profiler: Analyze Current File"
+      },
+      {
+        "command": "codeEnergyProfiler.showSummary",
+        "title": "Code Energy Profiler: Show Energy Summary"
+      },
+      {
+        "command": "codeEnergyProfiler.toggleLocalOnly",
+        "title": "Code Energy Profiler: Toggle Local-only Mode"
+      }
+    ],
+    "configuration": {
+      "title": "Code Energy Profiler",
+      "properties": {
+        "codeEnergyProfiler.remoteEndpoint": {
+          "type": "string",
+          "default": "http://localhost:8080",
+          "description": "Prediction API base URL if remote model is used."
+        },
+        "codeEnergyProfiler.localOnly": {
+          "type": "boolean",
+          "default": true,
+          "description": "Disable remote calls; use heuristic or local ONNX."
+        },
+        "codeEnergyProfiler.debounceMs": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "maximum": 2000,
+          "description": "Debounce interval for analysis."
+        },
+        "codeEnergyProfiler.enableTelemetry": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in anonymized telemetry for improvement."
+        },
+        "codeEnergyProfiler.severityThresholds": {
+          "type": "object",
+          "default": {
+            "low": 0.3,
+            "medium": 0.6,
+            "high": 0.8
+          },
+          "description": "Thresholds for hotspot severity."
+        },
+        "codeEnergyProfiler.showPatchPreview": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show diff preview before applying Quick Fix."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p ./",
+    "watch": "tsc -w -p ./",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "format": "prettier --write .",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/diff": "^7.0.2",
+    "@types/jest": "^29.5.5",
+    "@types/node": "^20.11.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "husky": "^9.0.0",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.6.0",
+    "vscode": "^1.1.35"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.24.0",
+    "diff": "^8.0.2",
+    "node-fetch": "^3.3.2",
+    "onnxruntime-node": "^1.20.0",
+    "quick-lru": "^7.0.0",
+    "tree-sitter": "^0.20.1",
+    "zod": "^3.23.0"
+  }
+}
