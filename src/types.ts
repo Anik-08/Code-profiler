@@ -25,6 +25,9 @@ export interface FeatureVector {
   avgFunctionLength: number;
   hotspotsSeeds: Range[];
   version: string;
+  conditionalCount?: number;
+  recursionPotential?: number;
+  memoryOps?: number;
 }
 export interface PredictionResult {
   fileScore: number;
