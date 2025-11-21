@@ -1,13 +1,16 @@
 import * as vscode from 'vscode';
 import { analyzePython } from './pythonAnalyzer';
 import { analyzeJS } from './jsAnalyzer';
+import { analyzeJava } from './javaAnalyzer';
 import { FeatureVector } from '../types';
 
 export async function analyzeDocumentFeatures(doc: vscode.TextDocument): Promise<FeatureVector> {
   const code = doc.getText();
   if (doc.languageId === 'python') return analyzePython(code);
   if (doc.languageId === 'javascript' || doc.languageId === 'typescript') return analyzeJS(code);
-  // Fallback
+  if (doc.languageId === 'java') return analyzeJava(code);
+
+  // Fallback (unsupported language)
   return {
     languageId: doc.languageId,
     tokenCount: code.length,

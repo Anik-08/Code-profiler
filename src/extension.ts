@@ -9,15 +9,37 @@ import { showSummary } from './ui/summaryPanel';
 import { registerPatchPreviewCommand } from './ui/commands';
 import { recordEvent, flushTelemetryIfEnabled } from './telemetry/telemetry';
 import { Hotspot, PredictionResult } from './types';
+import { InfoProvider } from './sidebar/InfoProvider';
+import { SuggestionsProvider, CESuggestion } from './sidebar/SuggestionsProvider';
+import { predictWithModel } from './model/modelClient';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let decorationType: vscode.TextEditorDecorationType;
 const cache = new QuickLRU<string, PredictionResult>({ maxSize: 256 });
 
+// Sidebar providers
+let infoProvider: InfoProvider;
+let suggestionsProvider: SuggestionsProvider;
+
 export async function activate(context: vscode.ExtensionContext) {
   diagnosticCollection = vscode.languages.createDiagnosticCollection('code-energy-profiler');
   decorationType = vscode.window.createTextEditorDecorationType({});
   registerPatchPreviewCommand(context);
+
+  // Register side panels
+  infoProvider = new InfoProvider();
+  suggestionsProvider = new SuggestionsProvider();
+  context.subscriptions.push(
+    vscode.window.registerTreeDataProvider('codeEnergy.info', infoProvider),
+    vscode.window.registerTreeDataProvider('codeEnergy.suggestions', suggestionsProvider),
+  );
+
+  // Helper: command for Suggestions panel to open the summary
+  context.subscriptions.push(
+    vscode.commands.registerCommand('codeEnergy.openOutput', () =>
+      vscode.commands.executeCommand('codeEnergyProfiler.showSummary'),
+    ),
+  );
 
   const schedule = new Map<string, NodeJS.Timeout>();
 
@@ -31,7 +53,27 @@ export async function activate(context: vscode.ExtensionContext) {
     let result = cache.get(key);
     if (!result) {
       const fv = await analyzeDocumentFeatures(document);
-      const { fileScore, hotspots } = scoreFeatures(fv);
+      let fileScore: number;
+      let hotspots = [];
+      // try model prediction (remote or ONNX)
+      const pred = await predictWithModel(fv);
+      if (pred && typeof pred.fileScore === 'number') {
+        fileScore = pred.fileScore;
+        // Map model-level fileScore to hotspots produced by heuristics so we still have ranges
+        const base = scoreFeatures(fv); // reuse heuristic to get ranges/order
+        hotspots = base.hotspots.map((h, i) => ({
+          ...h,
+          // combine model fileScore with heuristic distribution
+          score: Math.min(1, (pred.fileScore * 0.8) + (h.score * 0.2)),
+          estimate_mJ: pred.estimated_mJ ? pred.estimated_mJ * (1 - i * 0.12) : h.estimate_mJ,
+        }));
+      } else {
+        // fallback to heuristic
+        const out = scoreFeatures(fv);
+        fileScore = out.fileScore;
+        hotspots = out.hotspots;
+      }
+
       // Attach suggestions
       const suggestionsMap = evaluateSuggestions(fv, hotspots);
       const enriched: Hotspot[] = hotspots.map((h) => {
@@ -48,8 +90,32 @@ export async function activate(context: vscode.ExtensionContext) {
       cache.set(key, result);
       recordEvent('analysis', { fileScore, hotspots: hotspots.length });
     }
+
     renderDiagnostics(document, result);
     renderDecorations(result);
+
+    // Update sidebar panels
+    try {
+      infoProvider.setState({
+        lastAnalysisAt: new Date().toLocaleTimeString(),
+        lastFile: document.fileName,
+        modelVersion: result.modelVersion,
+        energy: Number((result.fileScore * 1000).toFixed(1)), // simple scaled score → mJ-like display
+      });
+
+      const ceSuggestions: CESuggestion[] = result.hotspots
+        .filter((h) => h.ruleId && h.suggestion)
+        .map((h, idx) => ({
+          block_id: `${h.start.line}-${h.end.line}`,
+          pattern: h.ruleId!,
+          proposed_change: h.suggestion!,
+          estimated_delta_percent: Math.round((h.deltaScore ?? 0) * 100),
+        }));
+      suggestionsProvider.setSuggestions(ceSuggestions);
+    } catch {
+      // ignore sidebar update failures
+    }
+
     flushTelemetryIfEnabled(cfg.telemetry);
   }
 

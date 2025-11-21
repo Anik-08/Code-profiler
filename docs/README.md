@@ -1,8 +1,6 @@
-# Code Energy Profiler (Hackathon Edition)
+# Code Energy Profiler (VS Code Extension)
 
-## Overview
-
-This VS Code extension identifies **energy hotspots** (structural inefficiencies) and provides **actionable suggestions** with one-click rewrites. Initial approach is heuristic + rule-based; model swap is pluggable (ONNX support).
+This extension identifies energy hotspots (structural inefficiencies) and provides actionable suggestions with one-click rewrites. Initial approach is heuristic + rule-based; optional remote API is available.
 
 ## Features
 
@@ -15,33 +13,30 @@ This VS Code extension identifies **energy hotspots** (structural inefficiencies
 
 ## Getting Started
 
-1. `npm install`
-2. `npm run build`
+1. npm install
+2. npm run build
 3. Open in VS Code → F5 (Extension Development Host).
 4. Open a Python or JS file containing inefficient patterns.
 5. See colored bullets (●) marking hotspots; hover for details.
-6. Use `Code Energy Profiler: Analyze Current File` or automatically triggered by edits.
+6. Use “Code Energy Profiler: Analyze Current File” or rely on automatic analysis on edits.
 
 ## Commands
 
-- `Analyze Current File`
-- `Show Energy Summary`
-- `Toggle Local-only Mode`
-- (Internal) `previewRewrite`, `applyRewrite` invoked by Quick Fix actions.
+- Analyze Current File
+- Show Energy Summary
+- Toggle Local-only Mode
+- (Internal) previewRewrite, applyRewrite invoked by Quick Fix actions.
 
 ## Configuration
 
-`codeEnergyProfiler.localOnly` (bool): disables remote calls.
-`codeEnergyProfiler.remoteEndpoint`: URL for FastAPI server.
-`codeEnergyProfiler.debounceMs`: analysis debounce.
-`codeEnergyProfiler.severityThresholds`: object with low/medium/high.
-`codeEnergyProfiler.showPatchPreview`: show diff before rewrite.
+- codeEnergyProfiler.localOnly (bool): disables remote calls.
+- codeEnergyProfiler.remoteEndpoint: URL for FastAPI server.
+- codeEnergyProfiler.debounceMs: analysis debounce.
+- codeEnergyProfiler.severityThresholds: object with low/medium/high.
+- codeEnergyProfiler.showPatchPreview: show diff before rewrite.
+- codeEnergyProfiler.enableTelemetry: opt-in anonymized telemetry to the Output panel.
 
-## Model Integration
-
-Place `energy_model.onnx` in `model_artifacts/`. Future: load at activation.
-
-## Remote API
+## Optional Remote API
 
 Run:
 
@@ -51,7 +46,7 @@ pip install -r requirements.txt
 uvicorn server:app --reload --port 8080
 ```
 
-Update `remoteEndpoint` settings accordingly.
+Update remoteEndpoint accordingly and disable local-only mode if you add remote integration later.
 
 ## Testing
 
@@ -59,13 +54,9 @@ Update `remoteEndpoint` settings accordingly.
 npm test
 ```
 
-## Hackathon Demo Flow
-
-See `DEMO_SCRIPT.md`.
-
 ## Privacy
 
-Local-only mode ensures no code leaves machine. Telemetry off by default; anonymized derived metrics only.
+Local-only mode ensures no code leaves the machine. Telemetry is off by default and, when enabled, writes anonymized events to an Output channel.
 
 ## Roadmap
 
@@ -74,10 +65,6 @@ Local-only mode ensures no code leaves machine. Telemetry off by default; anonym
 - JavaScript advanced rules
 - Real energy measurement (RAPL)
 
-## Contributing
-
-Open issues for enhancements; PR policy: small, focused changes.
-
 ## License
 
-MIT (add license file as needed)
+MIT

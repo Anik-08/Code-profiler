@@ -9,8 +9,8 @@ export interface CESuggestion {
 }
 
 export class SuggestionsProvider implements vscode.TreeDataProvider<SuggestionItem> {
-  private _onDidChangeTreeData: vscode.EventEmitter<SuggestionItem | undefined | void> = new vscode.EventEmitter();
-  readonly onDidChangeTreeData: vscode.Event<SuggestionItem | undefined | void> = this._onDidChangeTreeData.event;
+  private _onDidChangeTreeData: vscode.EventEmitter<SuggestionItem | undefined | null> = new vscode.EventEmitter();
+  readonly onDidChangeTreeData: vscode.Event<SuggestionItem | undefined | null> = this._onDidChangeTreeData.event;
 
   private suggestions: CESuggestion[] = [];
 
@@ -20,14 +20,14 @@ export class SuggestionsProvider implements vscode.TreeDataProvider<SuggestionIt
   }
 
   refresh(): void {
-    this._onDidChangeTreeData.fire();
+    this._onDidChangeTreeData.fire(undefined);
   }
 
   getTreeItem(element: SuggestionItem): vscode.TreeItem {
     return element;
   }
 
-  getChildren(): Thenable<SuggestionItem[]> {
+  getChildren(_element?: SuggestionItem): Thenable<SuggestionItem[]> {
     if (!this.suggestions.length) {
       return Promise.resolve([new SuggestionItem(
         'No suggestions yet',
@@ -59,6 +59,7 @@ class SuggestionItem extends vscode.TreeItem {
   ) {
     super(label, collapsibleState);
     this.description = description;
-    this.iconPath = new vscode.ThemeIcon('lightbulb');
+    // Avoid ThemeIcon constructor to remain compatible with older vscode typings.
+    // If you want an icon, prefix the label with a codicon: e.g., this.label = `$(lightbulb) ${label}`.
   }
 }

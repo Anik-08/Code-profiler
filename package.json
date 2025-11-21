@@ -5,17 +5,15 @@
   "version": "0.1.0",
   "publisher": "your-publisher-id",
   "engines": {
-    "vscode": "^1.1.35"
+    "vscode": "^1.85.0"
   },
-  "categories": [
-    "Linters",
-    "Other"
-  ],
+  "categories": ["Linters", "Other"],
   "activationEvents": [
     "onStartupFinished",
     "onLanguage:python",
     "onLanguage:javascript",
     "onLanguage:typescript",
+    "onLanguage:java",
     "onCommand:codeEnergyProfiler.analyzeCurrentFile",
     "onCommand:codeEnergyProfiler.showSummary",
     "onCommand:codeEnergyProfiler.toggleLocalOnly"
@@ -23,18 +21,11 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "codeEnergyProfiler.analyzeCurrentFile",
-        "title": "Code Energy Profiler: Analyze Current File"
-      },
-      {
-        "command": "codeEnergyProfiler.showSummary",
-        "title": "Code Energy Profiler: Show Energy Summary"
-      },
-      {
-        "command": "codeEnergyProfiler.toggleLocalOnly",
-        "title": "Code Energy Profiler: Toggle Local-only Mode"
-      }
+      { "command": "codeEnergyProfiler.analyzeCurrentFile", "title": "Code Energy Profiler: Analyze Current File" },
+      { "command": "codeEnergyProfiler.showSummary", "title": "Code Energy Profiler: Show Energy Summary" },
+      { "command": "codeEnergyProfiler.toggleLocalOnly", "title": "Code Energy Profiler: Toggle Local-only Mode" },
+      { "command": "codeEnergyProfiler.previewRewrite", "title": "Code Energy Profiler: Preview Rewrite" },
+      { "command": "codeEnergyProfiler.applyRewrite", "title": "Code Energy Profiler: Apply Suggested Rewrite" }
     ],
     "configuration": {
       "title": "Code Energy Profiler",
@@ -63,11 +54,7 @@
         },
         "codeEnergyProfiler.severityThresholds": {
           "type": "object",
-          "default": {
-            "low": 0.3,
-            "medium": 0.6,
-            "high": 0.8
-          },
+          "default": { "low": 0.3, "medium": 0.6, "high": 0.8 },
           "description": "Thresholds for hotspot severity."
         },
         "codeEnergyProfiler.showPatchPreview": {
