@@ -9,6 +9,9 @@ import { showSummary } from './ui/summaryPanel';
 import { registerPatchPreviewCommand } from './ui/commands';
 import { recordEvent, flushTelemetryIfEnabled } from './telemetry/telemetry';
 import { Hotspot, PredictionResult } from './types';
+import { loadOnnxModel, predictOnnx } from './model/onnxRunner';
+import { predictRemote } from './model/remotePredictor';
+import * as path from 'path';
 
 let diagnosticCollection: vscode.DiagnosticCollection;
 let decorationType: vscode.TextEditorDecorationType;
@@ -18,6 +21,15 @@ export async function activate(context: vscode.ExtensionContext) {
   diagnosticCollection = vscode.languages.createDiagnosticCollection('code-energy-profiler');
   decorationType = vscode.window.createTextEditorDecorationType({});
   registerPatchPreviewCommand(context);
+
+  // Load ONNX model if available
+  try {
+    const modelPath = path.join(context.extensionPath, 'model_artifacts', 'energy_model.onnx');
+    await loadOnnxModel(modelPath);
+    console.log('ONNX model loaded successfully');
+  } catch (error) {
+    console.warn('ONNX model not available, using heuristic scoring:', error);
+  }
 
   const schedule = new Map<string, NodeJS.Timeout>();
 
@@ -31,10 +43,30 @@ export async function activate(context: vscode.ExtensionContext) {
     let result = cache.get(key);
     if (!result) {
       const fv = await analyzeDocumentFeatures(document);
-      const { fileScore, hotspots } = scoreFeatures(fv);
+      
+      // Try remote API first if not in local-only mode
+      if (!cfg.localOnly && cfg.remoteEndpoint) {
+        try {
+          result = await predictRemote(fv, cfg.remoteEndpoint);
+        } catch (error) {
+          console.warn('Remote API failed, falling back to local:', error);
+        }
+      }
+      
+      // Try ONNX model if remote failed or local-only mode
+      if (!result) {
+        try {
+          result = await predictOnnx(fv);
+        } catch (error) {
+          // Fallback to heuristic scoring
+          const { fileScore, hotspots } = scoreFeatures(fv);
+          result = { fileScore, hotspots, modelVersion: 'heuristic-v1' };
+        }
+      }
+      
       // Attach suggestions
-      const suggestionsMap = evaluateSuggestions(fv, hotspots);
-      const enriched: Hotspot[] = hotspots.map((h) => {
+      const suggestionsMap = evaluateSuggestions(fv, result.hotspots);
+      const enriched: Hotspot[] = result.hotspots.map((h) => {
         const applicable = Object.values(suggestionsMap).filter((s) => h.score >= 0.25);
         const top = applicable[0];
         return {
@@ -44,9 +76,9 @@ export async function activate(context: vscode.ExtensionContext) {
           deltaScore: top?.deltaScore,
         };
       });
-      result = { fileScore, hotspots: enriched, modelVersion: 'heuristic-v1' };
+      result = { ...result, hotspots: enriched };
       cache.set(key, result);
-      recordEvent('analysis', { fileScore, hotspots: hotspots.length });
+      recordEvent('analysis', { fileScore: result.fileScore, hotspots: result.hotspots.length, modelVersion: result.modelVersion });
     }
     renderDiagnostics(document, result);
     renderDecorations(result);

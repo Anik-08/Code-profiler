@@ -51,4 +51,28 @@ export const rules: SuggestionRule[] = [
     exampleBefore: `for q in queries:\n  if q in items:\n    handle(q)`,
     exampleAfter: `items_set = set(items)\nfor q in queries:\n  if q in items_set:\n    handle(q)`,
   },
+  {
+    id: 'reduce-recursion-depth',
+    description: 'Consider iterative approach or memoization to reduce recursion overhead.',
+    matches: (fv, hs) => (fv.recursionPotential ?? 0) > 0 && hs.score >= 0.35,
+    rewrite: (original) => {
+      // Simple suggestion to add memoization
+      return `# Consider adding @lru_cache decorator or converting to iterative\nfrom functools import lru_cache\n\n@lru_cache(maxsize=128)\n${original}`;
+    },
+    estimatedDelta: (hs, fv) => Math.min(0.4, (fv.recursionPotential ?? 0) * 0.15),
+    exampleBefore: `def fibonacci(n):\n  if n <= 1:\n    return n\n  return fibonacci(n-1) + fibonacci(n-2)`,
+    exampleAfter: `from functools import lru_cache\n\n@lru_cache(maxsize=128)\ndef fibonacci(n):\n  if n <= 1:\n    return n\n  return fibonacci(n-1) + fibonacci(n-2)`,
+  },
+  {
+    id: 'optimize-memory-allocation',
+    description: 'Pre-allocate collections or use generators to reduce memory overhead.',
+    matches: (fv, hs) => (fv.memoryOps ?? 0) > 8 && hs.score >= 0.3,
+    rewrite: (original) => {
+      // Suggest using generators or pre-allocation
+      return original.replace(/\[\s*(.+?)\s+for\s+/g, '($1 for ');
+    },
+    estimatedDelta: (hs, fv) => Math.min(0.25, (fv.memoryOps ?? 0) / 40),
+    exampleBefore: `results = [process(x) for x in large_list]`,
+    exampleAfter: `results = (process(x) for x in large_list)  # Use generator for memory efficiency`,
+  },
 ];
