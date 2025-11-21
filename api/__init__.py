@@ -1,0 +1,1 @@
+# Makes this directory a Python package so `api.server:app` works with uvicorn.

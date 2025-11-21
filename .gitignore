@@ -41,3 +41,6 @@ next-env.d.ts
 
 .vercel
 /.history
+/.husky
+/.venv
+/api/__pycache__
