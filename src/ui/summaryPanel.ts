@@ -30,7 +30,10 @@ export function showSummary(result: PredictionResult) {
           return;
         }
         
-        if (!start || !end || typeof start.line !== 'number' || typeof end.line !== 'number') {
+        if (!start || !end || 
+            typeof start.line !== 'number' || typeof end.line !== 'number' ||
+            (start.character !== undefined && typeof start.character !== 'number') ||
+            (end.character !== undefined && typeof end.character !== 'number')) {
           console.warn('[summaryPanel] Invalid range in message:', msg);
           vscode.window.showWarningMessage('Cannot perform action: invalid code range');
           return;

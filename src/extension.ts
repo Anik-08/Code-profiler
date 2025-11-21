@@ -70,6 +70,7 @@ export async function activate(context: vscode.ExtensionContext) {
         
         // Calculate total hotspot score for normalized distribution
         const totalHotspotScore = base.hotspots.reduce((sum, h) => sum + h.score, 0);
+        const minThreshold = 0.001; // Minimum threshold to prevent division issues
         
         hotspots = base.hotspots.map((h) => {
           // Combine model fileScore with heuristic distribution
@@ -77,7 +78,7 @@ export async function activate(context: vscode.ExtensionContext) {
           
           // Distribute energy proportionally to hotspot scores (principled approach)
           let estimate_mJ = h.estimate_mJ;
-          if (pred.estimated_mJ && totalHotspotScore > 0) {
+          if (pred.estimated_mJ && totalHotspotScore > minThreshold) {
             // Normalize: distribute total energy based on relative hotspot importance
             const proportion = h.score / totalHotspotScore;
             estimate_mJ = pred.estimated_mJ * proportion;
