@@ -2,6 +2,10 @@
 
 This guide will help you get the Code Energy Profiler up and running in minutes.
 
+## ⚠️ IMPORTANT: Build Required!
+
+**Before using the extension, you MUST build it first!** If you see "command not found" errors, follow the setup instructions below.
+
 ## Prerequisites
 
 - Node.js 18+ and npm
@@ -10,17 +14,33 @@ This guide will help you get the Code Energy Profiler up and running in minutes.
 
 ## Installation & Setup
 
+### Option 1: Quick Setup (Recommended)
+
+```bash
+# Run the automated setup script
+./setup.sh
+```
+
+This will:
+1. Install Node.js dependencies
+2. Build the TypeScript extension
+3. Optionally train the ML model
+
+### Option 2: Manual Setup
+
 ### 1. Clone and Install Dependencies
 
 ```bash
-# Install Node.js dependencies
+# Install Node.js dependencies (REQUIRED)
 npm install
 
-# Install Python dependencies
+# Install Python dependencies (for API/ML features)
 cd api
 pip install -r requirements.txt
 cd ..
 ```
+
+**Note:** After `npm install`, you MUST run `npm run build` before the extension will work!
 
 ### 2. Train the ML Model
 

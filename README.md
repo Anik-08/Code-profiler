@@ -29,6 +29,21 @@ An intelligent VS Code extension that identifies energy-inefficient code pattern
 
 ### Installation
 
+**⚠️ IMPORTANT: You must build the extension before commands will work!**
+
+#### Quick Setup (Automated)
+
+```bash
+# 1. Clone repository
+git clone https://github.com/Anik-08/Code-profiler.git
+cd Code-profiler
+
+# 2. Run setup script (installs deps, builds extension, optionally trains model)
+./setup.sh
+```
+
+#### Manual Setup
+
 ```bash
 # 1. Clone repository
 git clone https://github.com/Anik-08/Code-profiler.git
@@ -37,16 +52,19 @@ cd Code-profiler
 # 2. Install dependencies
 npm install
 
-# 3. Train ML model
+# 3. Build extension (REQUIRED - commands won't work without this!)
+npm run build
+
+# 4. Train ML model (optional but recommended)
 cd ml
+pip install -r ../api/requirements.txt
 python generate_synthetic_dataset.py
 python train_model.py
 python export_onnx.py
 cd ..
-
-# 4. Build extension
-npm run build
 ```
+
+**If you see "command not found" errors:** You need to run `npm install` and `npm run build` first! See [SETUP.md](SETUP.md) for troubleshooting.
 
 ### Usage
 
