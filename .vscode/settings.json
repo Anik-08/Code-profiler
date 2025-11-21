@@ -1,3 +1,4 @@
 {
-    "java.dependency.syncWithFolderExplorer": false
+    "java.dependency.syncWithFolderExplorer": false,
+    "cmake.sourceDirectory": "C:/Users/anikt/OneDrive/Desktop/automa-ai/code-profiler/node_modules/nan"
 }

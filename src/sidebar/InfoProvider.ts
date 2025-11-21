@@ -28,7 +28,8 @@ export class InfoProvider implements vscode.TreeDataProvider<InfoItem> {
   getChildren(_element?: InfoItem): Thenable<InfoItem[]> {
     const items: InfoItem[] = [];
 
-    items.push(new InfoItem(`API: ${this.state.apiStatus.toUpperCase()}`));
+    const statusIcon = this.state.apiStatus === 'online' ? '$(pass)' : this.state.apiStatus === 'offline' ? '$(error)' : '$(question)';
+    items.push(new InfoItem(`${statusIcon} API: ${this.state.apiStatus.toUpperCase()}`));
 
     if (this.state.modelVersion) items.push(new InfoItem(`Model: ${this.state.modelVersion}`));
     if (this.state.energy !== undefined) items.push(new InfoItem(`Last Energy: ${this.state.energy.toFixed(1)} mJ`));
@@ -38,7 +39,7 @@ export class InfoProvider implements vscode.TreeDataProvider<InfoItem> {
     if (this.state.lastAnalysisAt) items.push(new InfoItem(`Analyzed: ${this.state.lastAnalysisAt}`));
 
     if (items.length === 1) {
-      items.push(new InfoItem('Run an analysis to populate info'));
+      items.push(new InfoItem('$(clock) Run an analysis to populate info'));
     }
     return Promise.resolve(items);
   }

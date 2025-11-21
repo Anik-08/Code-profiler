@@ -29,21 +29,16 @@ export class SuggestionsProvider implements vscode.TreeDataProvider<SuggestionIt
 
   getChildren(_element?: SuggestionItem): Thenable<SuggestionItem[]> {
     if (!this.suggestions.length) {
-      return Promise.resolve([new SuggestionItem(
-        'No suggestions yet',
-        'Run “Code Energy: Analyze Current File”',
-        vscode.TreeItemCollapsibleState.None
-      )]);
+      return Promise.resolve([
+        new SuggestionItem('$(lightbulb) No suggestions yet', 'Run "Code Energy: Analyze Current File"')
+      ]);
     }
     return Promise.resolve(
       this.suggestions.map(s => {
-        const label = `${s.pattern} (~${s.estimated_delta_percent}% improvement)`;
-        const item = new SuggestionItem(label, s.proposed_change, vscode.TreeItemCollapsibleState.None);
+        const label = `$(lightbulb) ${s.pattern} (~${s.estimated_delta_percent}% improvement)`;
+        const item = new SuggestionItem(label, s.proposed_change);
         item.tooltip = `${s.proposed_change}\nBlock: ${s.block_id}`;
-        item.command = {
-          command: 'codeEnergy.openOutput',
-          title: 'Open Output'
-        };
+        item.command = { command: 'codeEnergy.openOutput', title: 'Open Output' };
         item.contextValue = 'suggestion';
         return item;
       })
@@ -52,14 +47,8 @@ export class SuggestionsProvider implements vscode.TreeDataProvider<SuggestionIt
 }
 
 class SuggestionItem extends vscode.TreeItem {
-  constructor(
-    public readonly label: string,
-    public readonly description: string,
-    public readonly collapsibleState: vscode.TreeItemCollapsibleState
-  ) {
-    super(label, collapsibleState);
+  constructor(label: string, description?: string) {
+    super(label, vscode.TreeItemCollapsibleState.None);
     this.description = description;
-    // Avoid ThemeIcon constructor to remain compatible with older vscode typings.
-    // If you want an icon, prefix the label with a codicon: e.g., this.label = `$(lightbulb) ${label}`.
   }
 }
