@@ -15,21 +15,41 @@ export function showSummary(result: PredictionResult) {
 
     panel.webview.onDidReceiveMessage(async (msg) => {
       const editor = vscode.window.activeTextEditor;
-      if (!editor) return;
+      if (!editor) {
+        console.warn('[summaryPanel] No active editor for message:', msg?.type);
+        return;
+      }
 
       if (msg?.type === 'preview' || msg?.type === 'apply') {
         const { start, end, ruleId } = msg;
-        if (!ruleId) return;
+        
+        // Defensive checks for missing or invalid data
+        if (!ruleId) {
+          console.warn('[summaryPanel] Missing ruleId in message:', msg);
+          vscode.window.showWarningMessage('Cannot perform action: missing rule identifier');
+          return;
+        }
+        
+        if (!start || !end || typeof start.line !== 'number' || typeof end.line !== 'number') {
+          console.warn('[summaryPanel] Invalid range in message:', msg);
+          vscode.window.showWarningMessage('Cannot perform action: invalid code range');
+          return;
+        }
 
         const range = new vscode.Range(
-          new vscode.Position(start.line, start.character),
-          new vscode.Position(end.line, end.character),
+          new vscode.Position(start.line, start.character ?? 0),
+          new vscode.Position(end.line, end.character ?? 0),
         );
 
-        if (msg.type === 'preview') {
-          await vscode.commands.executeCommand('codeEnergyProfiler.previewRewrite', ruleId, editor.document, range);
-        } else {
-          await vscode.commands.executeCommand('codeEnergyProfiler.applyRewrite', ruleId, editor.document, range);
+        try {
+          if (msg.type === 'preview') {
+            await vscode.commands.executeCommand('codeEnergyProfiler.previewRewrite', ruleId, editor.document, range);
+          } else {
+            await vscode.commands.executeCommand('codeEnergyProfiler.applyRewrite', ruleId, editor.document, range);
+          }
+        } catch (err) {
+          console.error('[summaryPanel] Command execution failed:', err);
+          vscode.window.showErrorMessage(`Failed to ${msg.type} rewrite: ${err}`);
         }
       }
     });
@@ -72,6 +92,10 @@ function renderHtml(result: PredictionResult) {
     })),
   );
 
+  const energyDisplay = result.estimated_mJ 
+    ? `${result.estimated_mJ.toFixed(1)} mJ` 
+    : `~${(result.fileScore * 1000).toFixed(1)} mJ (scaled)`;
+
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -88,7 +112,7 @@ function renderHtml(result: PredictionResult) {
 </head>
 <body>
   <h2>File Energy Summary</h2>
-  <div class="score">File Score: ${result.fileScore.toFixed(3)}</div>
+  <div class="score">File Score: ${result.fileScore.toFixed(3)} | Energy: ${energyDisplay}</div>
   <p>Model: ${result.modelVersion}</p>
 
   <h3>Hotspots & Suggestions</h3>

@@ -54,19 +54,41 @@ export async function activate(context: vscode.ExtensionContext) {
     if (!result) {
       const fv = await analyzeDocumentFeatures(document);
       let fileScore: number;
+      let totalEstimatedMj: number | undefined;
       let hotspots = [];
+      let modelVersion = 'heuristic-v1';
+      
       // try model prediction (remote or ONNX)
       const pred = await predictWithModel(fv);
       if (pred && typeof pred.fileScore === 'number') {
         fileScore = pred.fileScore;
+        totalEstimatedMj = pred.estimated_mJ ?? undefined;
+        modelVersion = pred.estimated_mJ ? 'model-with-energy' : 'model-score-only';
+        
         // Map model-level fileScore to hotspots produced by heuristics so we still have ranges
         const base = scoreFeatures(fv); // reuse heuristic to get ranges/order
-        hotspots = base.hotspots.map((h, i) => ({
-          ...h,
-          // combine model fileScore with heuristic distribution
-          score: Math.min(1, (pred.fileScore * 0.8) + (h.score * 0.2)),
-          estimate_mJ: pred.estimated_mJ ? pred.estimated_mJ * (1 - i * 0.12) : h.estimate_mJ,
-        }));
+        
+        // Calculate total hotspot score for normalized distribution
+        const totalHotspotScore = base.hotspots.reduce((sum, h) => sum + h.score, 0);
+        
+        hotspots = base.hotspots.map((h) => {
+          // Combine model fileScore with heuristic distribution
+          const combinedScore = Math.min(1, (pred.fileScore * 0.8) + (h.score * 0.2));
+          
+          // Distribute energy proportionally to hotspot scores (principled approach)
+          let estimate_mJ = h.estimate_mJ;
+          if (pred.estimated_mJ && totalHotspotScore > 0) {
+            // Normalize: distribute total energy based on relative hotspot importance
+            const proportion = h.score / totalHotspotScore;
+            estimate_mJ = pred.estimated_mJ * proportion;
+          }
+          
+          return {
+            ...h,
+            score: combinedScore,
+            estimate_mJ,
+          };
+        });
       } else {
         // fallback to heuristic
         const out = scoreFeatures(fv);
@@ -86,7 +108,7 @@ export async function activate(context: vscode.ExtensionContext) {
           deltaScore: top?.deltaScore,
         };
       });
-      result = { fileScore, hotspots: enriched, modelVersion: 'heuristic-v1' };
+      result = { fileScore, estimated_mJ: totalEstimatedMj, hotspots: enriched, modelVersion };
       cache.set(key, result);
       recordEvent('analysis', { fileScore, hotspots: hotspots.length });
     }
@@ -96,11 +118,13 @@ export async function activate(context: vscode.ExtensionContext) {
 
     // Update sidebar panels
     try {
+      // Prefer actual energy estimate from model, fall back to scaled fileScore
+      const displayEnergy = result.estimated_mJ ?? (result.fileScore * 1000);
       infoProvider.setState({
         lastAnalysisAt: new Date().toLocaleTimeString(),
         lastFile: document.fileName,
         modelVersion: result.modelVersion,
-        energy: Number((result.fileScore * 1000).toFixed(1)), // simple scaled score → mJ-like display
+        energy: Number(displayEnergy.toFixed(1)),
       });
 
       const ceSuggestions: CESuggestion[] = result.hotspots

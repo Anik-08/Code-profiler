@@ -28,6 +28,7 @@ export interface FeatureVector {
 }
 export interface PredictionResult {
   fileScore: number;
+  estimated_mJ?: number; // Total file energy estimate from model
   hotspots: Hotspot[];
   modelVersion: string;
 }

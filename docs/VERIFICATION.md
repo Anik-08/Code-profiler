@@ -42,6 +42,12 @@ Expected results:
 ## 5) View Summary & Toggle Modes
 
 - Command Palette → `Code Energy Profiler: Show Energy Summary` to open summary panel.
+  - The summary panel displays:
+    - File score and total energy estimate (in mJ when available)
+    - Table of all hotspots with their line ranges, scores, energy estimates, and suggestions
+    - **Preview** and **Apply** buttons for each hotspot with actionable suggestions
+  - Click **Preview** to see a diff view of the proposed code change
+  - Click **Apply** to immediately apply the suggested rewrite to your code
 - Command Palette → `Code Energy Profiler: Toggle Local-only Mode` to switch between local heuristic/ONNX and remote API usage.
 
 Related settings (File → Preferences → Settings):
@@ -79,3 +85,10 @@ Then set `codeEnergyProfiler.localOnly=false` and `codeEnergyProfiler.remoteEndp
 ## 8) What to Look for in Code
 
 To trigger hotspots quickly, create a snippet with nested loops or repeated string concatenation; then run `Analyze Current File`. You should see diagnostics and a heatmap-like decoration near the loops.
+
+**Note on Comments**: The analyzer automatically excludes comments and blank lines from energy analysis. This means:
+- Comment-only sections will not be flagged as hotspots
+- Hotspot ranges avoid spanning pure comment lines
+- Energy estimates are based only on executable code
+
+Test this by adding comments before/after loops and verifying they don't affect the analysis.

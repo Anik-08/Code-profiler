@@ -41,3 +41,14 @@ next-env.d.ts
 
 .vercel
 /.history
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+.venv/
+venv/

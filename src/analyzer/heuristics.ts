@@ -12,6 +12,19 @@ function stripComments(code: string, languageId: string) {
   }
 }
 
+function isCommentOrBlankLine(line: string, languageId: string): boolean {
+  const trimmed = line.trim();
+  if (!trimmed) return true; // blank line
+  
+  if (languageId === 'python') {
+    // Python: line starting with #
+    return /^\s*#/.test(line);
+  } else {
+    // JS/TS/Java: line starting with //, /*, or * (in block comment)
+    return /^\s*(\/\/|\/\*|\*)/.test(line);
+  }
+}
+
 export function heuristicExtract(code: string, languageId: string): Omit<FeatureVector, 'version'> {
   const rawLines = code.split(/\r?\n/);
   const codeNoComments = stripComments(code, languageId);
@@ -54,12 +67,27 @@ export function heuristicExtract(code: string, languageId: string): Omit<Feature
       loopCount++;
       const level = usesBraces ? braceDepth + 1 : pyCurrentDepth + 1;
       nestedLoopDepth = Math.max(nestedLoopDepth, level);
-      // seed region around loop header
-      const end = Math.min(idx + 6, lines.length - 1);
-      hotspotsSeeds.push({
-        start: { line: idx, character: 0 },
-        end: { line: end, character: lines[end].length },
-      });
+      
+      // Seed region around loop header, but avoid comment-only lines
+      let endIdx = idx;
+      let nonCommentLines = 0;
+      const maxScan = Math.min(idx + 6, rawLines.length - 1);
+      
+      // Scan forward to find meaningful code lines (not just comments)
+      for (let scanIdx = idx; scanIdx <= maxScan && nonCommentLines < 5; scanIdx++) {
+        if (!isCommentOrBlankLine(rawLines[scanIdx] ?? '', languageId)) {
+          endIdx = scanIdx;
+          nonCommentLines++;
+        }
+      }
+      
+      // Only create hotspot if we found non-comment code
+      if (nonCommentLines > 0) {
+        hotspotsSeeds.push({
+          start: { line: idx, character: 0 },
+          end: { line: endIdx, character: (rawLines[endIdx] ?? '').length },
+        });
+      }
     }
 
     // update depth trackers after processing header
